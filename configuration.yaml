@@ -1,0 +1,145 @@
+api:
+  host: "0.0.0.0"
+  port: 10006
+  debug: true
+
+pipeline:
+  batch_time_budget: 14400
+  prompt_timeout: 600.0
+  use_planner: false
+  render_from_object: true
+  refinement_enabled: false
+
+benchmark: true
+warmup: true
+
+llm_clients:
+  openrouter:
+    enabled: false
+    base_url: "https://openrouter.ai/api/v1"
+    api_key_env: "OPENROUTER_API_KEY"
+  coder-instance:
+    enabled: true
+    base_url: "http://localhost:8001/v1"
+    api_key: "local"
+    vllm:
+      model: "Tooony133/Qwen-3.6-27B-v5"
+      gpu_ids: "0,1"
+      tensor_parallel_size: 2
+      gpu_memory_utilization: 0.9
+      max_model_len: 81920
+      max_num_seqs: 128
+  judge-critic-instance:
+    enabled: true
+    base_url: "http://localhost:8002/v1"
+    api_key: "local"
+    vllm:
+      model: "zai-org/GLM-4.6V-Flash"
+      gpu_ids: "2,3"
+      tensor_parallel_size: 2
+      gpu_memory_utilization: 0.9
+      max_model_len: 81920
+      max_num_seqs: 128
+      vllm_bin: "/opt/vllm-glm-env/bin/vllm"
+      trust_remote_code: true
+      reasoning_parser: null
+
+
+actors:
+  planner:
+    client: "coder-instance"
+    model: "Tooony133/Qwen-3.6-27B-v5"
+    workers: 128
+    queue_size: 64
+    max_tokens: 32768
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    min_p: 0.0
+    presence_penalty: 0.0
+    repetition_penalty: 1.0
+    seed: 1379
+    reasoning_effort: "medium"
+    providers:
+      order: []
+      allow_fallbacks: true
+  coder:
+    client: "coder-instance"
+    model: "Tooony133/Qwen-3.6-27B-v5"
+    workers: 128
+    queue_size: 64
+    max_tokens: 24576
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    min_p: 0.0
+    presence_penalty: 0.0
+    repetition_penalty: 1.0
+    seed: 1379
+    multimodal: true
+    ensemble_size: 30
+    ensemble_temperature: 0.6
+    providers:
+      order: []
+      allow_fallbacks: true
+  patcher:
+    workers: 64
+    queue_size: 64
+  critic:
+    client: "judge-critic-instance"
+    model: "zai-org/GLM-4.6V-Flash"
+    workers: 128
+    queue_size: 64
+    max_tokens: 6144
+    temperature: 0.6
+    top_p: 0.95
+    top_k: 20
+    min_p: 0.0
+    presence_penalty: 0.0
+    repetition_penalty: 1.0
+    seed: 1379
+    reasoning_effort: "medium"
+    ensemble_size: 1
+    providers:
+      order: []
+      allow_fallbacks: true
+  judge:
+    client: "judge-critic-instance"
+    model: "zai-org/GLM-4.6V-Flash"
+    workers: 128
+    queue_size: 64
+    max_tokens: 8192
+    temperature: 0.0
+    seed: 1379
+    providers:
+      order: []
+      allow_fallbacks: true
+  checker:
+    workers: 32
+    queue_size: 32
+  renderer:
+    workers: 16
+    queue_size: 32
+
+event_bus:
+  max_iter: 2
+  task_deadline_s: 3600
+  score_threshold: 0.55
+
+js_checker:
+  execution_timeout_ms: 5000
+  node_binary: "node"
+
+renderer:
+  sidecar_host: "127.0.0.1"
+  sidecar_port: 8003
+  startup_timeout_s: 60.0
+  request_timeout_s: 90.0
+  node_binary: "node"
+  img_size: 518
+  grid_gap: 5
+  bg_color: null
+  sidecar_count: 8
+  pool_size: 2
+  render_timeout_ms: 60000
+  protocol_timeout_ms: 60000

@@ -1,0 +1,2 @@
+--extra-index-url https://download.pytorch.org/whl/cu128
+vllm==0.17.1
