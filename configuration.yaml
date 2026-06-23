@@ -77,7 +77,7 @@ actors:
     repetition_penalty: 1.0
     seed: 1379
     multimodal: true
-    ensemble_size: 30
+    ensemble_size: 18
     ensemble_temperature: 0.6
     providers:
       order: []
